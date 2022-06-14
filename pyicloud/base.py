@@ -20,6 +20,7 @@ from pyicloud.services import (
     FindMyiPhoneServiceManager,
     CalendarService,
     UbiquityService,
+    FindFriendsService,
     ContactsService,
     RemindersService,
     PhotosService,
@@ -138,7 +139,8 @@ class PyiCloudSession(Session):
         try:
             data = response.json()
         except:  # pylint: disable=bare-except
-            request_logger.warning("Failed to parse response with JSON mimetype")
+            request_logger.warning(
+                "Failed to parse response with JSON mimetype")
             return response
 
         request_logger.debug(data)
@@ -226,7 +228,8 @@ class PyiCloudService:
         LOGGER.addFilter(self.password_filter)
 
         if cookie_directory:
-            self._cookie_directory = path.expanduser(path.normpath(cookie_directory))
+            self._cookie_directory = path.expanduser(
+                path.normpath(cookie_directory))
             if not path.exists(self._cookie_directory):
                 mkdir(self._cookie_directory, 0o700)
         else:
@@ -260,7 +263,8 @@ class PyiCloudService:
         self.session.cookies = cookielib.LWPCookieJar(filename=cookiejar_path)
         if path.exists(cookiejar_path):
             try:
-                self.session.cookies.load(ignore_discard=True, ignore_expires=True)
+                self.session.cookies.load(
+                    ignore_discard=True, ignore_expires=True)
                 LOGGER.debug("Read cookies from %s", cookiejar_path)
             except:  # pylint: disable=bare-except
                 # Most likely a pickled cookiejar from earlier versions.
@@ -287,7 +291,8 @@ class PyiCloudService:
                 self.data = self._validate_token()
                 login_successful = True
             except PyiCloudAPIResponseException:
-                LOGGER.debug("Invalid authentication token, will log in from scratch.")
+                LOGGER.debug(
+                    "Invalid authentication token, will log in from scratch.")
 
         if not login_successful and service is not None:
             app = self.data["apps"][service]
@@ -319,7 +324,8 @@ class PyiCloudService:
                 headers["scnt"] = self.session_data.get("scnt")
 
             if self.session_data.get("session_id"):
-                headers["X-Apple-ID-Session-Id"] = self.session_data.get("session_id")
+                headers["X-Apple-ID-Session-Id"] = self.session_data.get(
+                    "session_id")
 
             try:
                 self.session.post(
@@ -378,7 +384,8 @@ class PyiCloudService:
         """Checks if the current access token is still valid."""
         LOGGER.debug("Checking session token validity")
         try:
-            req = self.session.post("%s/validate" % self.SETUP_ENDPOINT, data="null")
+            req = self.session.post("%s/validate" %
+                                    self.SETUP_ENDPOINT, data="null")
             LOGGER.debug("Session token is still valid")
             return req.json()
         except PyiCloudAPIResponseException as err:
@@ -407,7 +414,8 @@ class PyiCloudService:
         """Get path for cookiejar file."""
         return path.join(
             self._cookie_directory,
-            "".join([c for c in self.user.get("accountName") if match(r"\w", c)]),
+            "".join([c for c in self.user.get(
+                "accountName") if match(r"\w", c)]),
         )
 
     @property
@@ -423,14 +431,16 @@ class PyiCloudService:
     def requires_2sa(self):
         """Returns True if two-step authentication is required."""
         return self.data.get("dsInfo", {}).get("hsaVersion", 0) >= 1 and (
-            self.data.get("hsaChallengeRequired", False) or not self.is_trusted_session
+            self.data.get("hsaChallengeRequired",
+                          False) or not self.is_trusted_session
         )
 
     @property
     def requires_2fa(self):
         """Returns True if two-factor authentication is required."""
         return self.data["dsInfo"].get("hsaVersion", 0) == 2 and (
-            self.data.get("hsaChallengeRequired", False) or not self.is_trusted_session
+            self.data.get("hsaChallengeRequired",
+                          False) or not self.is_trusted_session
         )
 
     @property
@@ -487,7 +497,8 @@ class PyiCloudService:
             headers["scnt"] = self.session_data.get("scnt")
 
         if self.session_data.get("session_id"):
-            headers["X-Apple-ID-Session-Id"] = self.session_data.get("session_id")
+            headers["X-Apple-ID-Session-Id"] = self.session_data.get(
+                "session_id")
 
         try:
             self.session.post(
@@ -515,7 +526,8 @@ class PyiCloudService:
             headers["scnt"] = self.session_data.get("scnt")
 
         if self.session_data.get("session_id"):
-            headers["X-Apple-ID-Session-Id"] = self.session_data.get("session_id")
+            headers["X-Apple-ID-Session-Id"] = self.session_data.get(
+                "session_id")
 
         try:
             self.session.get(
@@ -560,15 +572,23 @@ class PyiCloudService:
         """Gets the 'File' service."""
         if not self._files:
             service_root = self._get_webservice_url("ubiquity")
-            self._files = UbiquityService(service_root, self.session, self.params)
+            self._files = UbiquityService(
+                service_root, self.session, self.params)
         return self._files
+
+    @property
+    def friends(self):
+        """Gets the 'Friends' service."""
+        service_root = self._get_webservice_url("findme")
+        return FindFriendsService(service_root, self.session, self.params)
 
     @property
     def photos(self):
         """Gets the 'Photo' service."""
         if not self._photos:
             service_root = self._get_webservice_url("ckdatabasews")
-            self._photos = PhotosService(service_root, self.session, self.params)
+            self._photos = PhotosService(
+                service_root, self.session, self.params)
         return self._photos
 
     @property
